@@ -38,7 +38,7 @@ export function Field({
 }
 
 export const controlStyles =
-  "w-full rounded-md border border-border bg-bg px-3 text-sm text-fg placeholder:text-subtle " +
+  "w-full rounded-xl border border-border bg-bg px-3 text-sm text-fg placeholder:text-subtle " +
   "transition-colors hover:border-border-strong " +
   "focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 " +
   "disabled:cursor-not-allowed disabled:opacity-50 " +

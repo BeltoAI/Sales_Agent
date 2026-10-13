@@ -14,10 +14,8 @@ export type NavItem = {
 
 export function Brand({ href = "/" }: { href?: string }) {
   return (
-    <Link href={href} className="flex items-center gap-2 text-sm font-semibold tracking-tight text-fg">
-      <span aria-hidden className="grid size-6 place-items-center rounded-md bg-accent text-[11px] font-bold text-accent-fg">
-        SA
-      </span>
+    <Link href={href} className="flex items-center gap-2 text-[17px] font-bold tracking-tight text-fg">
+      <span aria-hidden className="size-2 rounded-full bg-accent" />
       Sales Agent
     </Link>
   );
@@ -36,8 +34,8 @@ export function Nav({
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-bg/80 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 sm:px-6">
+    <header className="sticky top-3 z-20 px-4">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 rounded-full border border-border bg-surface/80 pr-2 pl-5 shadow-[0_10px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl">
         <Brand href={brandHref} />
         {items.length > 0 && (
           <nav aria-label="Main" className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
@@ -47,10 +45,10 @@ export function Nav({
                   <span
                     key={item.href}
                     aria-disabled
-                    className="flex shrink-0 cursor-not-allowed items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-subtle"
+                    className="flex shrink-0 cursor-not-allowed items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-subtle"
                   >
                     {item.label}
-                    <span className="rounded border border-border px-1 text-[10px] uppercase tracking-wide">Soon</span>
+                    <span className="rounded-full border border-border px-1 text-[10px] uppercase tracking-wide">Soon</span>
                   </span>
                 );
               }
@@ -61,7 +59,7 @@ export function Nav({
                   href={item.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "shrink-0 rounded-md px-3 py-1.5 text-sm transition-colors",
+                    "shrink-0 rounded-full px-3 py-1.5 text-sm transition-colors",
                     active ? "bg-surface-2 text-fg" : "text-muted hover:bg-surface-2 hover:text-fg",
                   )}
                 >

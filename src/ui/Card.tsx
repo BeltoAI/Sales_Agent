@@ -2,7 +2,15 @@ import type { ComponentProps, ReactNode } from "react";
 import { cn } from "./cn";
 
 export function Card({ className, ...props }: ComponentProps<"div">) {
-  return <div className={cn("rounded-lg border border-border bg-surface", className)} {...props} />;
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border border-border bg-surface shadow-[0_10px_30px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.08)]",
+        className,
+      )}
+      {...props}
+    />
+  );
 }
 
 export function CardHeader({
