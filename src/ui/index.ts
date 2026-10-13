@@ -9,3 +9,5 @@ export { Table, THead, TBody, TR, TH, TD, TableEmpty } from "./Table";
 export { Nav, Brand } from "./Nav";
 export type { NavItem } from "./Nav";
 export { cn } from "./cn";
+export { StatTile, compactNumber } from "./StatTile";
+export { Meter } from "./Meter";

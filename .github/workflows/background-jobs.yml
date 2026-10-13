@@ -1,0 +1,29 @@
+# Optional external scheduler for the background jobs, for when Vercel Cron can't run often enough
+# (e.g. on the Hobby plan). OFF by default. To turn it on, in GitHub → Settings → Secrets and variables → Actions:
+#   - Variables: EXTERNAL_CRON = true, APP_URL = https://your-app.vercel.app
+#   - Secrets:   CRON_SECRET  = the same value as in Vercel
+# The job routes are idempotent, so running alongside Vercel Cron is safe.
+name: Background jobs
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  run:
+    if: vars.EXTERNAL_CRON == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call job routes
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          for job in agents replies send; do
+            code=$(curl -sS --max-time 70 -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/cron/${job}" || echo "000")
+            echo "${job}: HTTP ${code}"
+          done

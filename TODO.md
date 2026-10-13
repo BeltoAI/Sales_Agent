@@ -94,3 +94,19 @@ when PostgREST returns `PGRST205`.
 - Replies are matched by In-Reply-To/References to our Message-IDs, then by sender address for prospects
   we emailed. A reply from a different address (e.g. a colleague) without thread headers is not matched.
 - Answers to interested replies include the standard footer (address + unsubscribe), like every email.
+
+## Phase 8 – Dashboard + deploy
+
+- The dashboard needs a logged-in user with data, so it has only been checked by build/typecheck and the
+  unit-tested stats function, not viewed with real data.
+- Vercel Cron limits could not be confirmed against Vercel's live docs (no web access during the build).
+  Assumption: per-minute schedules need Pro; Hobby allows about one run per day. If the deploy rejects the
+  `crons` in `vercel.json`, remove them and enable `.github/workflows/background-jobs.yml`.
+- Not deployed yet: needs the Vercel project to be connected to the GitHub repo and the env values added.
+
+## Summary of what's needed to test end to end
+
+1. Run `supabase/migrations/0001_init.sql` in the Supabase SQL Editor (fixes the magic-link error above).
+2. Replace `SUPABASE_SERVICE_ROLE_KEY` with the secret key.
+3. Add `ANTHROPIC_API_KEY` and `CRON_SECRET` to `.env.local` (and `APP_URL` on Vercel).
+4. Connect a mailbox (app password), create a campaign, then call the cron routes (see README).
