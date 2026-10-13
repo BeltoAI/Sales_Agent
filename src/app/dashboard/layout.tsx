@@ -8,7 +8,7 @@ import { PauseAllSwitch } from "./PauseAllSwitch";
 const items: NavItem[] = [
   { href: "/dashboard", label: "Overview" },
   { href: "/dashboard/campaigns", label: "Campaigns" },
-  { href: "/dashboard/replies", label: "Replies", disabled: true },
+  { href: "/dashboard/inbox", label: "Inbox" },
   { href: "/dashboard/mailboxes", label: "Mailboxes" },
   { href: "/dashboard/settings", label: "Settings" },
 ];

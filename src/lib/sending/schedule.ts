@@ -121,3 +121,25 @@ export function followUpSlot(previousSentAt: Date, now: Date, tz: string, random
   const earliest = addBusinessDays(previousSentAt, MIN_BUSINESS_DAYS_BETWEEN_STEPS, tz);
   return nextBusinessSlot(new Date(Math.max(earliest.getTime(), now.getTime())), tz, random);
 }
+
+/** Default out-of-office pause when the auto-reply gives no return date. */
+export const OOO_DEFAULT_BUSINESS_DAYS = 7;
+
+/**
+ * When to resume after an out-of-office reply: a business-hours slot on the next business day
+ * after the stated return date (YYYY-MM-DD, in the recipient's timezone), or 7 business days
+ * after the reply if no date was given. Past dates count as "back now"; dates more than 60 days
+ * out are capped.
+ */
+export function outOfOfficeResumeAt(returnDate: string | null, receivedAt: Date, tz: string, random: () => number = Math.random): Date {
+  const m = returnDate?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  let after: Date;
+  if (m) {
+    after = zonedTimeToUtc(Number(m[1]), Number(m[2]), Number(m[3]) + 1, 0, 0, tz); // start of the day after
+  } else {
+    after = addBusinessDays(receivedAt, OOO_DEFAULT_BUSINESS_DAYS, tz);
+  }
+  const min = receivedAt.getTime();
+  const max = receivedAt.getTime() + 60 * 86_400_000;
+  return nextBusinessSlot(new Date(Math.min(Math.max(after.getTime(), min), max)), tz, random);
+}

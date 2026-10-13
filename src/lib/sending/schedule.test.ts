@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addBusinessDays, followUpSlot, isBusinessHours, nextBusinessSlot, safeTimezone, startOfLocalDay, zonedParts, zonedTimeToUtc } from "./schedule";
+import { addBusinessDays, followUpSlot, isBusinessHours, nextBusinessSlot, outOfOfficeResumeAt, safeTimezone, startOfLocalDay, zonedParts, zonedTimeToUtc } from "./schedule";
 
 const NY = "America/New_York";
 const BERLIN = "Europe/Berlin";
@@ -85,5 +85,23 @@ describe("minimum 3 business days between steps", () => {
       expect(slot.getTime()).toBeGreaterThanOrEqual(addBusinessDays(sent, 3, NY).getTime());
       expect(isBusinessHours(slot, NY)).toBe(true);
     }
+  });
+});
+
+describe("out-of-office resume", () => {
+  const received = zonedTimeToUtc(2026, 10, 13, 10, 0, NY); // Tue
+  it("resumes on the next business day after the stated return date", () => {
+    const at = outOfOfficeResumeAt("2026-10-23", received, NY); // back Fri 23rd → resume Mon 26th
+    expect(zonedParts(at, NY)).toMatchObject({ day: 26, weekday: 1 });
+    expect(isBusinessHours(at, NY)).toBe(true);
+  });
+  it("defaults to 7 business days when no date is given", () => {
+    const at = outOfOfficeResumeAt(null, received, NY);
+    expect(at.getTime()).toBeGreaterThanOrEqual(addBusinessDays(received, 7, NY).getTime());
+    expect(isBusinessHours(at, NY)).toBe(true);
+  });
+  it("treats past dates as back now, and caps far-future dates", () => {
+    expect(outOfOfficeResumeAt("2020-01-01", received, NY).getTime()).toBeGreaterThan(received.getTime());
+    expect(outOfOfficeResumeAt("2030-01-01", received, NY).getTime()).toBeLessThan(received.getTime() + 65 * 86_400_000) // 60 days, then the next business slot;
   });
 });

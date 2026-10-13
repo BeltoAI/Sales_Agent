@@ -1,5 +1,6 @@
 import "server-only";
 
+import { resumeOutOfOffice } from "@/lib/replies/process";
 import { startReadyProspects } from "@/lib/sending/scheduler";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { processNewProspects } from "./pipeline";
@@ -8,12 +9,15 @@ export type AgentsRunResult = { campaigns: number; written: number; invalid: num
 
 /**
  * Background agent pass over running campaigns: verify → research → write new prospects, then
- * start sequences for ready ones. Time-boxed; whatever doesn't fit continues on the next run.
+ * start sequences for ready ones, and resume out-of-office pauses. Time-boxed; whatever doesn't fit continues on the next run.
  */
 export async function runAgents({ budgetMs = 45_000 }: { budgetMs?: number } = {}): Promise<AgentsRunResult> {
   const started = Date.now();
   const db = createAdminClient();
   const result: AgentsRunResult = { campaigns: 0, written: 0, invalid: 0, started: 0, resumed: 0 };
+
+  // Out-of-office pauses whose return date has passed.
+  result.resumed = await resumeOutOfOffice();
 
   const { data: campaigns } = await db
     .from("campaigns")

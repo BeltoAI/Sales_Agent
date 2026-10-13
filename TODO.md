@@ -84,3 +84,13 @@ when PostgREST returns `PGRST205`.
 - Business hours ignore public holidays.
 - If the server crashes between the SMTP send and saving "sent", the message is marked failed
   ("outcome unknown") rather than retried, so it is never sent twice, but its follow-ups won't be scheduled.
+
+## Phase 7 – Replies: not yet tested end to end
+
+- The IMAP reader hasn't run against a real mailbox (none connected yet). Parsing was tested offline with
+  real-format Gmail bounce and reply messages; the IMAP calls follow imapflow's typed API and open INBOX
+  read-only (nothing is marked as read).
+- Only INBOX is read. Replies filtered to other folders/labels (or spam) are missed.
+- Replies are matched by In-Reply-To/References to our Message-IDs, then by sender address for prospects
+  we emailed. A reply from a different address (e.g. a colleague) without thread headers is not matched.
+- Answers to interested replies include the standard footer (address + unsubscribe), like every email.
