@@ -7,7 +7,7 @@ import type { Campaign, Prospect } from "@/lib/types";
 import { Badge, Card, CardBody, CardHeader, Table, TableEmpty, TBody, TD, TH, THead, TR } from "@/ui";
 import { ActionButton } from "../../ActionButton";
 import { CampaignBadge, DemoBadge, EmailStatusBadge, ProspectBadge } from "../../badges";
-import { deleteCampaign, findMore, regenerateIcp, researchAndWrite, setCampaignMailbox } from "../actions";
+import { deleteCampaign, findMore, pauseCampaign, regenerateIcp, researchAndWrite, setCampaignMailbox, startCampaign } from "../actions";
 import { IcpForm } from "./IcpForm";
 import { MailboxPicker } from "./MailboxPicker";
 
@@ -56,6 +56,16 @@ export default async function CampaignPage({ params, searchParams }: PageProps<"
             value={campaign.mailbox_id ?? ""}
             onChange={setCampaignMailbox.bind(null, campaign.id)}
           />
+          {approved &&
+            (campaign.status === "running" ? (
+              <ActionButton action={pauseCampaign.bind(null, campaign.id)} variant="secondary">
+                Pause campaign
+              </ActionButton>
+            ) : (
+              <ActionButton action={startCampaign.bind(null, campaign.id)} variant="primary" pendingLabel="Starting…">
+                {campaign.status === "paused" ? "Resume sending" : "Start sending"}
+              </ActionButton>
+            ))}
           <ActionButton
             action={deleteCampaign.bind(null, campaign.id)}
             variant="ghost"

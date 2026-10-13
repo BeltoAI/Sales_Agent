@@ -6,6 +6,7 @@ import { z } from "zod";
 import { AiError, planIcp } from "@/lib/ai";
 import { runFinder } from "@/lib/agents/finder";
 import { processNewProspects } from "@/lib/agents/pipeline";
+import { respreadScheduled, startReadyProspects } from "@/lib/sending/scheduler";
 import { requireProfile, requireUser } from "@/lib/auth";
 import { MissingEnvError } from "@/lib/env";
 import { logEvent } from "@/lib/events";
@@ -164,6 +165,46 @@ export async function researchAndWrite(campaignId: string): Promise<ActionResult
   } catch (e) {
     return { ok: false, message: explain(e) };
   }
+}
+
+/** Start sending: checks the prerequisites, marks the campaign running, schedules ready prospects. */
+export async function startCampaign(campaignId: string): Promise<ActionResult> {
+  if (!uuid.safeParse(campaignId).success) return { ok: false, message: "Unknown campaign." };
+  const { supabase, user } = await requireUser();
+  const profile = await requireProfile();
+  const { data: c } = await supabase.from("campaigns").select("id, status, mailbox_id, icp_approved_at").eq("id", campaignId).maybeSingle();
+  if (!c) return { ok: false, message: "Unknown campaign." };
+  if (!c.icp_approved_at) return { ok: false, message: "Approve the target profile first." };
+  if (!profile.mailing_address?.trim()) return { ok: false, message: "Add your physical mailing address in Settings first." };
+  if (!c.mailbox_id) return { ok: false, message: "Choose a mailbox to send from first." };
+  const { data: mb } = await supabase.from("mailboxes").select("status").eq("id", c.mailbox_id).maybeSingle();
+  if (mb?.status !== "active") return { ok: false, message: "The selected mailbox isn't active. Resume or fix it first." };
+
+  const { error } = await supabase.from("campaigns").update({ status: "running" }).eq("id", campaignId);
+  if (error) return { ok: false, message: "Could not start the campaign." };
+  await logEvent(user.id, "campaign.started", { campaign_id: campaignId });
+  try {
+    if (c.status === "paused") await respreadScheduled(user.id, campaignId);
+    const s = await startReadyProspects(user.id, campaignId);
+    revalidatePath(`/dashboard/campaigns/${campaignId}`);
+    return {
+      ok: true,
+      message: `Running. ${s.started} sequence${s.started === 1 ? "" : "s"} scheduled in recipients' business hours${s.skipped ? `, ${s.skipped} skipped (not verified, role address or active elsewhere)` : ""}. New prospects are researched and started automatically.`,
+    };
+  } catch (e) {
+    revalidatePath(`/dashboard/campaigns/${campaignId}`);
+    return { ok: false, message: explain(e) };
+  }
+}
+
+export async function pauseCampaign(campaignId: string): Promise<ActionResult> {
+  if (!uuid.safeParse(campaignId).success) return { ok: false, message: "Unknown campaign." };
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase.from("campaigns").update({ status: "paused" }).eq("id", campaignId);
+  if (error) return { ok: false, message: "Could not pause the campaign." };
+  await logEvent(user.id, "campaign.paused", { campaign_id: campaignId });
+  revalidatePath(`/dashboard/campaigns/${campaignId}`);
+  return { ok: true, message: "Paused. Nothing more is sent from this campaign until you resume." };
 }
 
 export async function setCampaignMailbox(campaignId: string, mailboxId: string): Promise<ActionResult> {

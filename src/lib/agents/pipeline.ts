@@ -2,15 +2,17 @@ import "server-only";
 
 import { logEvent } from "@/lib/events";
 import { senderFromProfile } from "@/lib/sender";
+import { getVerifier } from "@/lib/verify";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Profile, Prospect } from "@/lib/types";
 import { researchProspect } from "./researcher";
 import { writeForProspect } from "./writer";
 
-export type PipelineResult = { processed: number; written: number; generic: number; failed: number; remaining: number };
+export type PipelineResult = { processed: number; invalid: number; written: number; generic: number; failed: number; remaining: number };
 
 /**
- * Advance "new" prospects of a campaign: research → write emails. Stops starting new work once
+ * Advance "new" prospects of a campaign: verify email → research → write emails.
+ * Verification runs first so no AI money is spent on undeliverable addresses. Stops starting new work once
  * `budgetMs` has elapsed so each serverless run stays inside its time limit. Safe to re-run:
  * research is skipped when already done, and the writer won't duplicate messages.
  */
@@ -37,15 +39,29 @@ export async function processNewProspects(
     .limit(max);
   const prospects = (data ?? []) as Prospect[];
 
-  const result: PipelineResult = { processed: 0, written: 0, generic: 0, failed: 0, remaining: 0 };
+  const result: PipelineResult = { processed: 0, invalid: 0, written: 0, generic: 0, failed: 0, remaining: 0 };
+  const verifier = getVerifier();
   for (const p of prospects) {
     if (Date.now() - started > budgetMs) break;
     result.processed++;
     try {
       let prospect = p;
+      // Verify (demo prospects are never verified as valid; the sender blocks them anyway).
+      if (!p.is_demo && p.email_status === "unchecked" && p.email) {
+        const v = await verifier.verify(p.email);
+        const patch = { email_status: v.status, email_checked_at: new Date().toISOString(), email_check_provider: v.provider };
+        if (v.status !== "valid") {
+          await db.from("prospects").update({ ...patch, status: "excluded" }).eq("id", p.id).eq("user_id", userId).eq("status", "new");
+          await logEvent(userId, "verifier.rejected", { prospect_id: p.id, status: v.status, reason: v.reason });
+          result.invalid++;
+          continue;
+        }
+        await db.from("prospects").update(patch).eq("id", p.id).eq("user_id", userId);
+        prospect = { ...prospect, ...patch };
+      }
       if (!p.researched_at) {
         const r = await researchProspect(p);
-        prospect = { ...p, research_notes: r.notes, personal_detail: r.detail, research_source_url: r.sourceUrl, researched_at: new Date().toISOString() };
+        prospect = { ...prospect, research_notes: r.notes, personal_detail: r.detail, research_source_url: r.sourceUrl, researched_at: new Date().toISOString() };
       }
       const w = await writeForProspect(sender, prospect);
       if (w.ok) {

@@ -68,3 +68,19 @@ when PostgREST returns `PGRST205`.
 - A prospect whose emails can't pass the checks twice is parked as `excluded` (see the activity log for why);
   "Research and write" on the prospect page retries it.
 - User edits to an email are checked for length/plain text on save, but are not re-fact-checked.
+
+## Phase 6 – Verify + Send: not yet tested end to end
+
+- No real email has been sent by the send job: it needs the migration applied, a working
+  `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, a connected mailbox and a verified (non-demo) prospect.
+  Safety rules are covered by unit tests (`src/lib/sending/*.test.ts`, mutation-checked), and the cron
+  and unsubscribe routes were checked to reject unauthenticated / forged requests.
+- To trigger jobs by hand locally: `curl -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/cron/agents`
+  then `/api/cron/send` (only sends inside the recipient's business hours).
+- Verification is syntax + MX only (counted as "valid" by decision). It can't detect non-existent mailboxes
+  at real domains; expect some bounces. A paid verifier can be added in `src/lib/verify/index.ts`.
+- Daily cap: two overlapping send runs could each pass the cap check for the same mailbox and exceed it by
+  at most the batch size. Vercel Cron doesn't overlap runs at a 5-minute schedule with 60 s runs.
+- Business hours ignore public holidays.
+- If the server crashes between the SMTP send and saving "sent", the message is marked failed
+  ("outcome unknown") rather than retried, so it is never sent twice, but its follow-ups won't be scheduled.
