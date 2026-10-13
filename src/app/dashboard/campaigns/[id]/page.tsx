@@ -7,7 +7,7 @@ import type { Campaign, Prospect } from "@/lib/types";
 import { Badge, Card, CardBody, CardHeader, Table, TableEmpty, TBody, TD, TH, THead, TR } from "@/ui";
 import { ActionButton } from "../../ActionButton";
 import { CampaignBadge, DemoBadge, EmailStatusBadge, ProspectBadge } from "../../badges";
-import { deleteCampaign, findMore, regenerateIcp, setCampaignMailbox } from "../actions";
+import { deleteCampaign, findMore, regenerateIcp, researchAndWrite, setCampaignMailbox } from "../actions";
 import { IcpForm } from "./IcpForm";
 import { MailboxPicker } from "./MailboxPicker";
 
@@ -36,6 +36,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps<"
   const icp = readIcp(campaign.icp_json);
   const approved = Boolean(campaign.icp_approved_at);
   const hasDemo = list.some((p) => p.is_demo);
+  const newCount = list.filter((p) => p.status === "new").length;
 
   return (
     <div className="flex flex-col gap-8">
@@ -103,9 +104,16 @@ export default async function CampaignPage({ params, searchParams }: PageProps<"
           }
           action={
             approved ? (
-              <ActionButton action={findMore.bind(null, campaign.id)} pendingLabel="Searching…">
-                Find more
-              </ActionButton>
+              <div className="flex flex-wrap items-start gap-2">
+                <ActionButton action={findMore.bind(null, campaign.id)} pendingLabel="Searching…">
+                  Find more
+                </ActionButton>
+                {newCount > 0 && (
+                  <ActionButton action={researchAndWrite.bind(null, campaign.id)} pendingLabel="Researching and writing…" variant="primary">
+                    {`Research & write emails (${newCount} new)`}
+                  </ActionButton>
+                )}
+              </div>
             ) : null
           }
         />

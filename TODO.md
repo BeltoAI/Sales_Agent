@@ -56,3 +56,15 @@ when PostgREST returns `PGRST205`.
 - The demo provider is used whenever `APOLLO_API_KEY` is empty; its people use `@example.com` and are blocked
   from sending by both the database and the sender.
 - The finder runs inside the "Approve" / "Find more" button (25 prospects per click). No background finder yet.
+
+## Phase 5 – Researcher + Writer: not yet tested end to end
+
+- Needs `ANTHROPIC_API_KEY` (missing) and a working `SUPABASE_SERVICE_ROLE_KEY` for a live run. The website
+  fetcher was tested live (redirects, text extraction, about-page discovery) and against SSRF targets.
+- Research reads only the homepage + one "about" page. JavaScript-only sites yield little text, so those
+  prospects get honest generic emails.
+- DNS rebinding: hosts are checked before each request, but `fetch` resolves DNS again. Low risk; a pinned
+  resolver (custom undici dispatcher) would close it fully.
+- A prospect whose emails can't pass the checks twice is parked as `excluded` (see the activity log for why);
+  "Research and write" on the prospect page retries it.
+- User edits to an email are checked for length/plain text on save, but are not re-fact-checked.

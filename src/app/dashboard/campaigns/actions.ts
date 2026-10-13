@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { AiError, planIcp } from "@/lib/ai";
 import { runFinder } from "@/lib/agents/finder";
+import { processNewProspects } from "@/lib/agents/pipeline";
 import { requireProfile, requireUser } from "@/lib/auth";
 import { MissingEnvError } from "@/lib/env";
 import { logEvent } from "@/lib/events";
@@ -141,6 +142,26 @@ async function find(userId: string, campaignId: string): Promise<ActionResult> {
     };
   } catch (e) {
     revalidatePath(`/dashboard/campaigns/${campaignId}`);
+    return { ok: false, message: explain(e) };
+  }
+}
+
+/** Research + write emails for the next few new prospects (time-boxed to fit one request). */
+export async function researchAndWrite(campaignId: string): Promise<ActionResult> {
+  if (!uuid.safeParse(campaignId).success) return { ok: false, message: "Unknown campaign." };
+  const { supabase, user } = await requireUser();
+  const { data } = await supabase.from("campaigns").select("id").eq("id", campaignId).maybeSingle();
+  if (!data) return { ok: false, message: "Unknown campaign." };
+  try {
+    const r = await processNewProspects(user.id, campaignId, { budgetMs: 40_000, max: 5 });
+    revalidatePath(`/dashboard/campaigns/${campaignId}`);
+    if (r.processed === 0) return { ok: true, message: "Nothing to do: no new prospects waiting." };
+    const parts = [`Wrote emails for ${r.written} of ${r.processed}`];
+    if (r.generic) parts.push(`${r.generic} generic (thin research)`);
+    if (r.failed) parts.push(`${r.failed} failed (see the prospect or the activity log)`);
+    parts.push(r.remaining ? `${r.remaining} still waiting; click again or let the background job continue` : "all done");
+    return { ok: r.failed === 0 || r.written > 0, message: `${parts.join(". ")}.` };
+  } catch (e) {
     return { ok: false, message: explain(e) };
   }
 }
