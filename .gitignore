@@ -1,0 +1,24 @@
+# Local builder tooling (never committed)
+.venv
+chat.py
+
+# Secrets: every env file is ignored except the placeholder template
+.env*
+!.env.example
+
+# Dependencies and caches
+node_modules
+.npm-cache
+
+# Next.js / build output
+.next
+out
+next-env.d.ts
+*.tsbuildinfo
+
+# Vercel
+.vercel
+
+# Misc
+.DS_Store
+npm-debug.log*
