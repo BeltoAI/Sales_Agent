@@ -8,7 +8,7 @@ const items: NavItem[] = [
   { href: "/dashboard", label: "Overview" },
   { href: "/dashboard/campaigns", label: "Campaigns", disabled: true },
   { href: "/dashboard/replies", label: "Replies", disabled: true },
-  { href: "/dashboard/mailboxes", label: "Mailboxes", disabled: true },
+  { href: "/dashboard/mailboxes", label: "Mailboxes" },
   { href: "/dashboard/settings", label: "Settings" },
 ];
 

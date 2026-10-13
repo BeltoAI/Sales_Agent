@@ -22,3 +22,6 @@ next-env.d.ts
 # Misc
 .DS_Store
 npm-debug.log*
+
+# Scratch files
+.tmp
