@@ -45,27 +45,13 @@ export function AuthForm({ mode, next, initialError }: { mode: "signup" | "login
       setStatus({ kind: "error", message: friendlyError(err) });
     }
   }
-
-  async function continueWithGoogle() {
-    setStatus({ kind: "working" });
-    try {
-      const { error } = await createClient().auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: callbackUrl(next) },
-      });
-      if (error) throw error;
-      // The browser is now redirecting to Google.
-    } catch (err) {
-      setStatus({ kind: "error", message: friendlyError(err) });
-    }
-  }
-
+  
   if (status.kind === "sent") {
     return (
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-semibold tracking-tight">Check your email</h1>
         <p className="mt-3 text-sm leading-relaxed text-muted">
-          We sent a sign-in link to <span className="text-fg">{status.email}</span>. Open it in this same browser to
+              We sent a sign-in link to <span className="text-fg">{status.email}</span>. Open it in this same browser to
           continue. You can close this tab.
         </p>
         <Button variant="ghost" size="sm" className="mt-6 -ml-3" onClick={() => setStatus({ kind: "idle" })}>
@@ -84,16 +70,6 @@ export function AuthForm({ mode, next, initialError }: { mode: "signup" | "login
 
       <Card className="mt-8">
         <CardBody className="flex flex-col gap-4 py-6">
-          <Button variant="secondary" className="w-full" onClick={continueWithGoogle} disabled={busy}>
-            Continue with Google
-          </Button>
-
-          <div className="flex items-center gap-3 text-xs text-subtle">
-            <span className="h-px flex-1 bg-border" />
-            or
-            <span className="h-px flex-1 bg-border" />
-          </div>
-
           <form onSubmit={sendMagicLink} className="flex flex-col gap-4">
             <Input
               type="email"
